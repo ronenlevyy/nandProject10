@@ -12,6 +12,7 @@ from CompilationEngine import CompilationEngine
 from JackTokenizer import JackTokenizer
 
 
+
 def analyze_file(
         input_file: typing.TextIO, output_file: typing.TextIO) -> None:
     """Analyzes a single file.
@@ -22,9 +23,12 @@ def analyze_file(
     """
     # Your code goes here!
     # It might be good to start by creating a new JackTokenizer and CompilationEngine:
-    # tokenizer = JackTokenizer(input_file)
-    # engine = CompilationEngine(tokenizer, output_file)
-    pass
+    tokenizer = JackTokenizer(input_file)
+    # tokenizer.advance()
+    engine = CompilationEngine(tokenizer, output_file)
+    engine.compile_class()
+
+
 
 
 if "__main__" == __name__:
