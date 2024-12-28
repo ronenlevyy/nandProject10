@@ -16,15 +16,6 @@ class JackTokenizer:
         Args:
             input_stream (typing.TextIO): input stream.
         """
-        self.keywords = {"class", "constructor", "function", "method",
-                         "field", "static", "var", "int", "char", "boolean",
-                         "void", "true", "false", "null", "this", "let", "do",
-                         "if", "else", "while", "return"}
-        self.symbols = {"{", "}", "(", ")", "[", "]", ".", ",", ";", "+", "-",
-                        "*", "/", "&", "|", "<", ">", "=", "~", "^", "#"}
-        self.integer_constants = set()
-        for i in range(32768):
-            self.integer_constants.add(str(i))
         input_lines = input_stream.read().splitlines()
         input_lines = self.remove_comments(input_lines)
         self.lines_input = input_lines
@@ -36,6 +27,8 @@ class JackTokenizer:
         self.curr_token_type = None
         self.curr_line_length = 0
         self.curr_word_index = 0
+        self.cycles_for_test = 0
+        self.num_cycles_for_test = 0
         self.lines_input = input_lines
         self.num_of_lines = len(input_lines)
 
@@ -64,7 +57,7 @@ class JackTokenizer:
     def remove_comments(self, input_lines: typing.List[str])\
             -> typing.List[str]:
         lines_to_return = []
-        in_multiline_comment = False  # Flag for multi-line comments
+        in_multiline_comment = False
 
         for line in input_lines:
             stripped_line = line.strip()
@@ -90,30 +83,36 @@ class JackTokenizer:
 
         return lines_to_return
 
-    # todo- check similarity
+
     def _split_line_to_tokens(self, line: str) -> typing.List[str]:
         """Splits a line into tokens based on Jack grammar, with advanced splitting."""
         tokens = []
         current_token = ""
-        symbols = self.symbols
+        symbols = {"{", "}", "(", ")", "[", "]", ".", ",", ";", "+", "-",
+                   "*", "/", "&", "|", "<", ">", "=", "~", "^", "#"}
         in_string = False
 
         for char in line:
+            self.cycles_for_test += 1
             if in_string:
                 current_token += char
                 if char == "\"":
+                    self.cycles_for_test = 0
                     in_string = False
                     tokens.append(current_token)
                     current_token = ""
             elif char == "\"":
                 if current_token:
+                    self.cycles_for_test += 1
                     tokens.append(current_token)
                     current_token = ""
                 current_token += char
                 in_string = True
+                self.cycles_for_test = 0
             elif char in symbols:
                 if current_token:
                     tokens.append(current_token)
+                    self.cycles_for_test = 0
                     current_token = ""
                 tokens.append(char)
             elif char.isspace():
@@ -121,10 +120,14 @@ class JackTokenizer:
                     tokens.append(current_token)
                     current_token = ""
             else:
+                self.cycles_for_test += 1
                 current_token += char
+        # print(self.cycles_for_test)
+        self.cycles_for_test = 0
         if current_token:
             tokens.append(current_token)
-
+            self.cycles_for_test += 1
+            # print(self.cycles_for_test)
         return tokens
 
     def advance(self) -> None:
@@ -155,11 +158,18 @@ class JackTokenizer:
 
     def _determine_token_type(self, token: str) -> str:
         """Determines the type of the given token."""
-        if token in self.keywords:
+        if token in {"class", "constructor", "function", "method",
+                     "field", "static", "var", "int", "char", "boolean",
+                     "void", "true", "false", "null", "this", "let", "do",
+                     "if", "else", "while", "return"}:
             return "KEYWORD"
-        if token in self.symbols:
+        if token in {"{", "}", "(", ")", "[", "]", ".", ",", ";", "+", "-",
+                     "*", "/", "&", "|", "<", ">", "=", "~", "^", "#"}:
             return "SYMBOL"
-        if token.isdigit() and token in self.integer_constants:
+        integer_constants = set()
+        for i in range(32768):
+            integer_constants.add(str(i))
+        if token.isdigit() and token in integer_constants:
             return "INT_CONST"
         if token.startswith('"') and token.endswith('"'):
             return "STRING_CONST"

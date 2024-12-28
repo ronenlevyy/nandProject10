@@ -143,7 +143,6 @@ class CompilationEngine:
         # print(self.num_of_cycles)
         self.num_of_cycles = 0
 
-    # todo check last again
     def compile_subroutine(self) -> None:
         """
         Compiles a complete method, function, or constructor.
@@ -151,23 +150,11 @@ class CompilationEngine:
         you will understand why this is necessary in project 11.
         """
         set1 = {"constructor", "function", "method"}
-        if self.my_tokenizer.curr_token == "{":
-            self._write_opening_tag("subroutineBody")
-            self._write_symbol("{")
-            self.my_tokenizer.advance()
-            while self.my_tokenizer.curr_token == "var":
-                for _ in range(self.num_loop):
-                    self.num_of_cycles += 1
-                self.compile_var_dec()
-
-            self.compile_statements()
-
-            self._write_symbol("}")
-            self._write_closing_tag("subroutineBody")
-            self.my_tokenizer.advance()
+        if self.my_tokenizer.curr_token not in set1 and \
+                self.my_tokenizer.curr_token != "{":
+            self.compile_term()
 
         elif self.my_tokenizer.curr_token in set1:
-            # subroutineDec
             self._write_opening_tag("subroutineDec")
             self._write_keyword(self.my_tokenizer.curr_token)
             self.my_tokenizer.advance()
@@ -191,6 +178,20 @@ class CompilationEngine:
             self.my_tokenizer.advance()
             self.compile_subroutine()
             self._write_closing_tag("subroutineDec")
+        elif self.my_tokenizer.curr_token == "{":
+            self._write_opening_tag("subroutineBody")
+            self._write_symbol("{")
+            self.my_tokenizer.advance()
+            while self.my_tokenizer.curr_token == "var":
+                for _ in range(self.num_loop):
+                    self.num_of_cycles += 1
+                self.compile_var_dec()
+
+            self.compile_statements()
+
+            self._write_symbol("}")
+            self._write_closing_tag("subroutineBody")
+            self.my_tokenizer.advance()
         else:
             for _ in range(self.num_loop):
                 self.num_of_cycles += 1
@@ -216,6 +217,8 @@ class CompilationEngine:
                 self._write_symbol(",")
                 self.my_tokenizer.advance()
                 self.num_of_cycles += 1
+            if self.my_tokenizer.curr_token == ")":
+                break
         self._write_closing_tag("parameterList")
         # print(self.num_of_cycles)
         self.num_of_cycles = 0
@@ -242,9 +245,8 @@ class CompilationEngine:
                 self.my_tokenizer.advance()
                 self.num_of_cycles += 1
 
-        if self.my_tokenizer.curr_token == ";":
-            self._write_symbol(";")
-            self.my_tokenizer.advance()
+        self._write_symbol(";")
+        self.my_tokenizer.advance()
         self.num_of_cycles += 1
         self._write_closing_tag("varDec")
         # print(self.num_of_cycles)
@@ -425,7 +427,6 @@ class CompilationEngine:
         self._write_opening_tag("term")
         self.compile_term()
         self._write_closing_tag("term")
-
         valid_symbols = {"+", "-", "*", "/", "&", "|", "<", ">", "="}
 
         while self.my_tokenizer.curr_token in valid_symbols:
@@ -463,7 +464,7 @@ class CompilationEngine:
         part of this term and should not be advanced over.
         """
         keyword_constant_set = {"true", "false", "null", "this"}
-        unary_symbols = {"-", "~"}
+        unary_symbols = {"-", "~", "^", "#"}
         this_token = self.my_tokenizer.curr_token
         the_next_token_ind = self.my_tokenizer.curr_word_index
         self.num_of_cycles += 1
